@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SpringBoot-Xss</title>
+
+<script type="text/javascript" th:src="@{/webjars/codemirror/lib/codemirror.js}"}></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/mode/javascript/javascript.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/mode/xml/xml.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/addon//fold/foldcode.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/addon//fold/foldgutter.js}"></script>
+
+<script type="text/javascript" th:src="@{/webjars/layui/layui.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
+
+<link rel="stylesheet" th:href="@{/webjars/layui/css/layui.css}" />
+<link rel="stylesheet" th:href="@{/webjars/codemirror/lib/codemirror.css}">
+<link rel="stylesheet" th:href="@{/webjars/codemirror/theme/monokai.css}"/>
+<link rel="stylesheet" th:href="@{/webjars/codemirror/addon/hint/show-hint.css}">
+</head>
+<body>
+
+<div class="layui-main site-inline">
+    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px;">
+        <legend>SpringBoot-Xss Study</legend>
+    </fieldset>
+    
+    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
+      <legend>post request</legend>
+    </fieldset>
+    
+    <form class="layui-form" lay-filter="formFilter1" action="">
+        <div class="layui-form-item">
+            <div class="layui-form-item">
+	            <label class="layui-form-label">name</label>
+	            <div class="layui-input-block">
+	                <input type="text" name="name" id="nameId" lay-verify="required" autocomplete="off" placeholder="请输入name" class="layui-input" th:value="${name}">
+	            </div>
+	        </div>
+            <div class="layui-form-item">
+		         <label class="layui-form-label">description</label>
+		         <div class="layui-input-block">
+		             <textarea class="layui-textarea" rows="8" name="description" id="descriptionId" lay-verify="required" th:text="${description}"></textarea>
+		         </div>
+            </div>
+            <div class="layui-input-block">
+                <button type="submit" class="layui-btn" lay-submit="" lay-filter="postFilter">post</button>
+                <button type="button" class="layui-btn layui-btn-primary" id="resetBtnId1">重置</button>
+            </div>
+        </div>
+    </form>
+    
+    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
+      <legend>post request</legend>
+    </fieldset>
+    
+    <form class="layui-form" lay-filter="formFilter2" action="">
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button type="submit" class="layui-btn" lay-submit="" lay-filter="getFilter">get</button>
+                <button type="button" class="layui-btn layui-btn-primary" id="resetBtnId2">重置</button>
+            </div>
+        </div>
+    </form>
+    
+    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
+      <legend>response data</legend>
+    </fieldset>
+    
+    <div class="layui-form-item">
+        <label class="layui-form-label">response</label>
+        <div class="layui-input-block">
+            <textarea class="layui-textarea" rows="8" name="response" id="responseId" lay-verify="required" readonly="readonly"></textarea>
+        </div>
+    </div>
+</div>
+     
+<script>
+	myTextarea = document.getElementById("responseId");
+	var editor = CodeMirror.fromTextArea(myTextarea, {
+	    lineNumbers: true,
+	    theme: "monokai",
+	    json: true,
+	    readOnly: true
+	});
+	
+	editor.setSize('100%', '300px');
+
+	layui.use(['form', 'layedit'], function(){
+	    var form = layui.form
+	    ,layer = layui.layer
+	    ,layedit = layui.layedit
+	    
+	    form.on('submit(postFilter)', function(data) {
+	    	editor.setValue('');
+	        var index =layer.load(2, { shade: [0.1,'#fff'] });
+	        $.ajax({
+	            url: '/mock/post/',
+	            type: 'post',
+	            dataType:'json',
+	            contentType:"application/json",
+	            async:true,
+	            cache:false,
+	            data:JSON.stringify(data.field),
+	            
+	            success:function(data) {
+	                if(data.success) {
+	                    layer.close(index);
+	                    editor.setValue(JSON.stringify(data.response, null, 4));
+	                } else {
+	                    layer.close(index);
+	                    layer.msg(data.errorMsg, {icon: 5});
+	                }
+	            },
+	            
+	            error:function(data) {
+	                layer.close(index);
+	                layer.msg(data.errorMsg, {icon: 5});
+	            }
+	        });
+	    	return false;
+	    });
+	    
+	    form.on('submit(getFilter)', function(data) {
+	    	$("#responseId").val('');
+	        var index =layer.load(2, { shade: [0.1,'#fff'] });
+	        $.ajax({
+	            url: '/mock/get/',
+	            type: 'get',
+	            dataType:'json',
+	            contentType:"application/json",
+	            async:true,
+	            cache:false,
+	            
+	            success:function(data) {
+	                if(data.success) {
+	                    layer.close(index);	                    
+                        editor.setValue(JSON.stringify(data.response, null, 4));
+	                } else {
+	                    layer.close(index);
+	                    layer.msg(data.errorMsg, {icon: 5});
+	                }
+	            },
+	            
+	            error:function(data) {
+	                layer.close(index);
+	                layer.msg(data.errorMsg, {icon: 5});
+	            }
+	        });
+            return false;
+        });
+	    
+	});
+	
+	
+	$("#resetBtnId1").click(function() {
+		editor.setValue('');
+    })
+    
+    $("#resetBtnId2").click(function() {
+    	editor.setValue('');
+    })
+    
+</script>
+
+</body>
+</html>
